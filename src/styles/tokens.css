@@ -1,0 +1,98 @@
+/**
+ * Design tokens extracted from Figma design
+ * (file ABW2xpz0Tll7uEdCzZ9ob4, node 58:2) — "ISI" wedding invitation,
+ * 596px fixed canvas, "Proyek Strategis Rumah Tangga (PSRT)" architectural theme.
+ */
+:root {
+  /* Canvas */
+  --canvas-width: 596px;
+
+  /* Colors - Node 58:2 Architectural Palette */
+  --color-bg: #e5e5e0;
+  --color-surface: #ffffff;
+  --color-blueprint-grid: rgba(60, 90, 120, 0.08);
+
+  /* Primary Theme Accents */
+  --color-olive: #99986b;
+  --color-olive-dark: #828154;
+  --color-olive-light: #c2b98f;
+  --color-olive-bg: #99986b;
+
+  /* Button & Dark UI Accents */
+  --color-btn-dark: #555953;
+  --color-btn-dark-hover: #40443e;
+  --color-btn-border: #444742;
+  --color-banner-dark: #555953;
+
+  /* Gold & Status Tones */
+  --color-gold: #c18e3f;
+  --color-gold-soft: #c49f66;
+  --color-gold-border: #aa7a3a;
+  --color-gold-frame: #cc9f64;
+  --color-gold-light: #dbc58e;
+  --color-gold-status: #b6a23d;
+
+  /* Card & Paper Backgrounds */
+  --color-cream: #efe1cf;
+  --color-cream-bg: #fdf8f1;
+  --color-cream-card: #faf6ef;
+  --color-cream-block: #fff9e8;
+  --color-cream-panel: #fde2c4;
+  --color-cream-banner: #fde5c0;
+  --color-cream-text: #feecc0;
+  --color-yellow-badge: #fff4bf;
+  --color-yellow-tag: #ffeb86;
+
+  /* Stamp Accents */
+  --color-stamp-brown: #5b2c2c;
+  --color-stamp-wax: #4c2222;
+
+  /* Neutral Borders & Texts */
+  --color-gray-border: #777474;
+  --color-gray-line: #c8c5be;
+  --color-text: #232323;
+  --color-text-dark: #2a2b2a;
+  --color-text-muted: #5e5e5e;
+  --color-wish-text: #455d69;
+  --color-placeholder: rgba(117, 117, 117, 0.6);
+
+  /* Legacy aliases for backward compatibility */
+  --color-maroon: var(--color-text-dark);
+  --color-maroon-deep: var(--color-text-dark);
+  --color-maroon-dark: var(--color-text-dark);
+  --color-maroon-btn: var(--color-btn-dark);
+  --color-maroon-send: var(--color-btn-dark);
+  --color-maroon-border: var(--color-gray-border);
+  --color-red-title: var(--color-text-dark);
+  --color-red-amp: var(--color-olive);
+  --color-red-rsvp: var(--color-text-dark);
+  --color-red-name: var(--color-text-dark);
+
+  /* Cover Depan Node 58:295 Tokens */
+  --color-cover-gold: #ad9265;
+  --color-cover-gold-light: #dbc58e;
+  --color-cover-crimson: #7e0909;
+  --color-cover-btn: #747a75;
+  --color-cover-btn-hover: #5e645f;
+
+  /* Typography */
+  --font-serif: 'Times New Roman', Times, serif;
+  --font-serif-bold: 'Times New Roman', Times, serif;
+  --font-monomakh: 'Monomakh', 'Times New Roman', serif;
+  --font-playfair: 'Playfair Display', Georgia, serif;
+  --font-bellefair: 'Bellefair', Georgia, serif;
+  --font-abhaya: 'Abhaya Libre', Georgia, serif;
+  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mozilla: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-script: 'Pinyon Script', 'Alex Brush', 'Great Vibes', cursive;
+  --font-family-base: var(--font-serif);
+  --font-size-base: 16px;
+  --line-height-base: 1.5;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+}
