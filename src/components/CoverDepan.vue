@@ -50,23 +50,26 @@ function handleOpen() {
 // Cover Entrance State
 const coverReady = ref(false)
 
-// Fit within 1 screen height without collapsing on zoom
+// Fit within 1 screen height / full screen coverage
 const scale = ref(1)
-let baseDpr = 1
 
 function updateScale() {
   if (typeof window === 'undefined') return
 
-  const currentDpr = window.devicePixelRatio || 1
-  const zoomFactor = currentDpr / (baseDpr || 1)
+  const vw = window.innerWidth
+  const vh = window.innerHeight
 
-  const vw = window.innerWidth * (zoomFactor > 0.05 ? zoomFactor : 1)
-  const vh = window.innerHeight * (zoomFactor > 0.05 ? zoomFactor : 1)
+  const scaleW = vw / 596
+  const scaleH = vh / 1183
 
-  const scaleW = (vw - 16) / 596
-  const scaleH = (vh - 16) / 1183
-
-  scale.value = Math.min(scaleW, scaleH, 1)
+  // On mobile devices (vw <= 600) or portrait aspect ratio,
+  // scale to fill the entire viewport edge-to-edge (full screen)
+  if (vw <= 600 || vw < vh) {
+    scale.value = Math.max(scaleW, scaleH)
+  } else {
+    // Desktop / landscape screens: scale by height to frame the entire document
+    scale.value = scaleH
+  }
 }
 
 watch(
@@ -84,13 +87,14 @@ watch(
 )
 
 onMounted(() => {
-  baseDpr = window.devicePixelRatio || 1
   updateScale()
   window.addEventListener('resize', updateScale)
+  window.addEventListener('orientationchange', updateScale)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateScale)
+  window.removeEventListener('orientationchange', updateScale)
 })
 </script>
 
@@ -98,17 +102,13 @@ onUnmounted(() => {
   <div
     class="cover-depan-wrapper"
     :class="{ 'cover-ready': coverReady }"
-    :style="{
-      width: `${Math.round(596 * scale)}px`,
-      height: `${Math.round(1183 * scale)}px`,
-    }"
     data-node-id="58:295"
     data-name="COVER DEPAN"
   >
     <div
       class="cover-canvas"
       :style="{
-        transform: `scale(${scale})`,
+        transform: `translate(-50%, -50%) scale(${scale})`,
       }"
     >
       <!-- 1. Background Desk Blueprint Grid (Node 58:296) -->
@@ -348,18 +348,24 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Wrapper ensuring zero overflow and strict canvas sizing */
+/* Wrapper ensuring full screen coverage (1 halaman full) */
 .cover-depan-wrapper {
   position: relative;
-  margin: auto;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
   background-color: #c0b8ba;
   user-select: none;
   flex-shrink: 0;
-  touch-action: pan-x pan-y pinch-zoom;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   opacity: 0;
   filter: blur(12px);
-  transform: scale(0.92);
+  transform: scale(0.96);
   transition: opacity 1.8s cubic-bezier(0.16, 1, 0.3, 1),
               filter 1.8s cubic-bezier(0.16, 1, 0.3, 1),
               transform 2.0s cubic-bezier(0.16, 1, 0.3, 1);
@@ -374,11 +380,11 @@ onUnmounted(() => {
 
 .cover-canvas {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 50%;
+  left: 50%;
   width: 596px;
   height: 1183px;
-  transform-origin: top left;
+  transform-origin: center center;
   overflow: hidden;
   background-color: #c0b8ba;
 }

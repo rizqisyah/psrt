@@ -3,12 +3,14 @@ import { ref, onMounted } from 'vue'
 import PreloaderScreen from './components/PreloaderScreen.vue'
 import CoverDepan from './components/CoverDepan.vue'
 import IsiUndangan from './components/IsiUndangan.vue'
+import FloatingMusic from './components/FloatingMusic.vue'
 
 const isLoading = ref(true)
 const isCoverActive = ref(false)
 const isOpened = ref(false)
 const showCoverModal = ref(true)
 const guestName = ref('NAMA TAMU UNDANGAN')
+const musicRef = ref(null)
 
 onMounted(() => {
   // Parse guest name from URL query parameter (e.g., ?to=Nama+Tamu or ?guest=...)
@@ -29,7 +31,13 @@ onMounted(() => {
   }
 })
 
+function handlePreloaderFinish() {
+  isLoading.value = false
+  musicRef.value?.play()
+}
+
 function handleOpenInvitation() {
+  musicRef.value?.play()
   isOpened.value = true
   // Smoothly hide cover overlay after unlocking
   setTimeout(() => {
@@ -56,7 +64,7 @@ function handleReopenCover() {
       <PreloaderScreen
         v-if="isLoading"
         @leaving="isCoverActive = true"
-        @finish="isLoading = false"
+        @finish="handlePreloaderFinish"
       />
     </Transition>
 
@@ -80,7 +88,10 @@ function handleReopenCover() {
       <IsiUndangan :active="isOpened" />
     </div>
 
-    <!-- Floating Button to Re-open Cover Dossier -->
+    <!-- Floating Music Disc at Bottom Right (Auto-play & Vinyl Spinning) -->
+    <FloatingMusic ref="musicRef" v-if="!isLoading" />
+
+    <!-- Floating Button to Re-open Cover Dossier (Bottom Left) -->
     <Transition name="btn-pop">
       <button
         v-if="!showCoverModal"
@@ -149,10 +160,9 @@ function handleReopenCover() {
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y pinch-zoom;
+  overflow: hidden;
   padding: 0;
+  margin: 0;
   transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1),
               opacity 1.1s cubic-bezier(0.4, 0, 0.2, 1),
               filter 1.1s cubic-bezier(0.4, 0, 0.2, 1);
@@ -189,11 +199,11 @@ function handleReopenCover() {
   opacity: 0;
 }
 
-/* Floating Re-Open Button */
+/* Floating Re-Open Button (Placed on Bottom-Left so Bottom-Right is reserved for Vinyl Disc) */
 .btn-reopen-cover {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  left: 20px;
   z-index: 100;
   display: flex;
   align-items: center;
@@ -241,8 +251,8 @@ function handleReopenCover() {
   }
 
   .btn-reopen-cover {
-    bottom: 16px;
-    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    left: 16px;
     padding: 8px 14px;
     font-size: 13px;
   }
