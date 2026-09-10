@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import loadingLogo from '../assets/loading-logo.png'
+import loadingLogo from '../assets/loading-stamp-cropped.png'
 
 const props = defineProps({
   duration: {
@@ -12,12 +12,10 @@ const props = defineProps({
 const emit = defineEmits(['finish', 'leaving'])
 
 const displayedText = ref('')
-const isFadingOut = ref(false)
 
 const fullText = 'Wait a second...'
 let typeTimer = null
 let finishTimer = null
-let postFadeTimer = null
 
 function startTypewriter() {
   let charIndex = 0
@@ -42,14 +40,9 @@ function startTypewriter() {
 }
 
 function handleDone() {
-  isFadingOut.value = true
   if (typeTimer) clearInterval(typeTimer)
   emit('leaving')
-
-  // Give 900ms for smooth fade out transition before telling parent to unmount
-  postFadeTimer = setTimeout(() => {
-    emit('finish')
-  }, 900)
+  emit('finish')
 }
 
 onMounted(() => {
@@ -63,14 +56,12 @@ onMounted(() => {
 onUnmounted(() => {
   if (typeTimer) clearInterval(typeTimer)
   if (finishTimer) clearTimeout(finishTimer)
-  if (postFadeTimer) clearTimeout(postFadeTimer)
 })
 </script>
 
 <template>
   <div
     class="loading-page-container"
-    :class="{ 'is-hidden': isFadingOut }"
     role="status"
     aria-live="polite"
   >
@@ -105,19 +96,7 @@ onUnmounted(() => {
   background-color: #ffffff;
   padding: 24px;
   pointer-events: auto;
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1),
-              visibility 0.9s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
-}
-
-.loading-page-container.is-hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: scale(1.05);
+  user-select: none;
 }
 
 .loading-content-container {
@@ -137,11 +116,12 @@ onUnmounted(() => {
 }
 
 .loading-gif {
-  max-width: 115px;
-  width: 100%;
+  width: 70px;
+  max-width: 100%;
   height: auto;
+  display: block;
   object-fit: contain;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08));
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.09));
 }
 
 .loading-caption {
@@ -184,7 +164,7 @@ onUnmounted(() => {
 
 @media (max-width: 600px) {
   .loading-gif {
-    max-width: 100px;
+    width: 60px;
   }
 
   .loading-caption {

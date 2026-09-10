@@ -25,6 +25,9 @@ import {
   imgCoverFountainPen,
   imgCoverCoupleNamesCalligraphy,
 } from '../assets'
+import { useWedding } from '../composables/useWedding'
+
+const { coupleOrder } = useWedding()
 
 const props = defineProps({
   guestName: {
@@ -336,10 +339,10 @@ onUnmounted(() => {
         <div class="approval-stamp-box">
           <img :src="imgSignaturesTwoFamilies" alt="Stempel Persetujuan Dua Keluarga" />
           <span class="sign-text sign-sari" data-node-id="58:338">
-            KELUARGA BESAR<br />SARI
+            KELUARGA BESAR<br />{{ (coupleOrder.first?.namaPanggilan || 'SARI').toUpperCase() }}
           </span>
           <span class="sign-text sign-zahron" data-node-id="58:339">
-            KELUARGA BESAR<br />ZAHRON
+            KELUARGA BESAR<br />{{ (coupleOrder.second?.namaPanggilan || 'ZAHRON').toUpperCase() }}
           </span>
         </div>
       </div>
@@ -363,19 +366,66 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  opacity: 0;
-  filter: blur(12px);
-  transform: scale(0.96);
-  transition: opacity 1.8s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 1.8s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 2.0s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform, filter;
 }
 
-.cover-depan-wrapper.cover-ready {
-  opacity: 1;
-  filter: blur(0);
-  transform: scale(1);
+/* Staggered Cinematic Layer Entrance System (Qinvi style) */
+.cover-canvas > * {
+  visibility: hidden;
+  animation-play-state: paused;
+}
+
+.cover-ready .cover-canvas > * {
+  visibility: visible;
+  animation-play-state: running;
+}
+
+@keyframes riseUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes riseUpCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 28px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes riseUpScale {
+  from {
+    opacity: 0;
+    transform: translateY(32px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeInSoft {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cover-canvas > * {
+    animation: none !important;
+    visibility: visible !important;
+  }
 }
 
 .cover-canvas {
@@ -387,6 +437,104 @@ onUnmounted(() => {
   transform-origin: center center;
   overflow: hidden;
   background-color: #c0b8ba;
+}
+
+/* Choreographed Animation Delays for each Layer (Qinvi Cinematic Entrance) */
+.blueprint-grid {
+  animation: fadeInSoft 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
+}
+
+.blueprint-sheet-10 {
+  animation: fadeInSoft 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.25s backwards;
+}
+
+.house-sketch-wrap {
+  animation: riseUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s backwards;
+}
+
+.main-paper-frame {
+  animation: riseUpScale 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
+}
+
+.drafting-compass {
+  animation: fadeInSoft 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.5s backwards;
+}
+
+.pen-shadow,
+.rolled-blueprint-tube,
+.fountain-pen-wrap {
+  animation: riseUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.8s backwards;
+}
+
+.clipboard-badge-wrap {
+  animation: riseUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.4s backwards;
+}
+
+.stamp-approved-wrap {
+  animation: riseUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.5s backwards;
+}
+
+.monogram-group {
+  animation: riseUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.55s backwards;
+}
+
+.doc-box-outer,
+.doc-box-inner,
+.doc-box-title,
+.doc-box-divider,
+.doc-box-number {
+  animation: riseUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.65s backwards;
+}
+
+.doc-subtitle-header,
+.doc-subtitle-line {
+  animation: riseUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.75s backwards;
+}
+
+.project-main-title {
+  animation: riseUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.85s backwards;
+}
+
+.house-divider-container {
+  animation: riseUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.95s backwards;
+}
+
+.invite-statement-text {
+  animation: riseUpCentered 2.2s cubic-bezier(0.16, 1, 0.3, 1) 1.05s backwards;
+}
+
+.subproject-gold-title {
+  animation: riseUpCentered 2.2s cubic-bezier(0.16, 1, 0.3, 1) 1.15s backwards;
+}
+
+.couple-names-container {
+  animation: riseUpCentered 2.4s cubic-bezier(0.16, 1, 0.3, 1) 1.25s backwards;
+}
+
+.names-bottom-divider {
+  animation: riseUpCentered 2.0s cubic-bezier(0.16, 1, 0.3, 1) 1.35s backwards;
+}
+
+.guest-salutation-wrap {
+  animation: riseUpCentered 2.4s cubic-bezier(0.16, 1, 0.3, 1) 1.45s backwards;
+}
+
+.btn-buka-dokumen {
+  animation: riseUp 2.4s cubic-bezier(0.16, 1, 0.3, 1) 1.6s backwards;
+}
+
+.privacy-container {
+  animation: riseUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 1.75s backwards;
+}
+
+.approval-section-wrap {
+  animation: riseUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 1.85s backwards;
+}
+
+.botanical-mid-left,
+.botanical-bottom-left,
+.botanical-mid-right {
+  animation: fadeInSoft 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.6s backwards;
 }
 
 /* Absolute Positioning Base */

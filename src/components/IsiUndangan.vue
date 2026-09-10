@@ -6,6 +6,7 @@ const props = defineProps({
 })
 import KetentuanTeknisModal from './KetentuanTeknisModal.vue'
 import DetailKonstruksiModal from './DetailKonstruksiModal.vue'
+import { useWedding } from '../composables/useWedding'
 import {
   imgB38F9Ec16289496F8314878C82Adb01F6,
   img536E6F845C284191805A62999E5945Eb1,
@@ -415,8 +416,25 @@ function closeDetailKonstruksi() {
   isDetailKonstruksiOpen.value = false
 }
 
+
+// Composable Integration
+const {
+  wedding,
+  mempelaiPria,
+  mempelaiWanita,
+  coupleOrder,
+  acaraList,
+  countdownDate,
+  tamu,
+  rekeningList,
+  ucapanList,
+  submitGuestRsvp,
+  submitGuestUcapan,
+} = useWedding()
+
 function openMaps() {
-  window.open('https://maps.google.com/?q=Masjid+Agung+Gresik', '_blank')
+  const url = acaraList.value?.[0]?.map_url || 'https://maps.google.com/?q=Masjid+Agung+Gresik'
+  window.open(url, '_blank')
 }
 
 function scrollToCouple() {
@@ -429,64 +447,107 @@ const rsvpName = ref('')
 const rsvpAttending = ref('Hadir')
 const rsvpCount = ref('2 Orang')
 const rsvpSubmitted = ref(false)
+const isSendingRsvp = ref(false)
+const rsvpFeedback = ref('')
+const showRsvpPopup = ref(false)
 
-function handleSendRsvp() {
+watch(
+  () => tamu.value?.namaTamu,
+  (name) => {
+    if (name && !rsvpName.value) {
+      rsvpName.value = name
+    }
+  },
+  { immediate: true }
+)
+
+async function handleSendRsvp() {
   if (!rsvpName.value.trim()) {
-    alert('Mohon masukkan nama Anda.')
+    rsvpFeedback.value = 'Mohon masukkan nama Anda.'
     return
   }
-  rsvpSubmitted.value = true
-  alert('Terima kasih! Konfirmasi kehadiran Anda telah tersimpan.')
+  isSendingRsvp.value = true
+  rsvpFeedback.value = ''
+  try {
+    const paxNum = parseInt(rsvpCount.value) || 1
+    await submitGuestRsvp({
+      nama: rsvpName.value.trim(),
+      kehadiran: rsvpAttending.value,
+      jumlah: paxNum,
+    })
+    rsvpSubmitted.value = true
+    showRsvpPopup.value = true
+  } catch (err) {
+    console.error('[handleSendRsvp] Error:', err)
+    rsvpFeedback.value = err?.message || 'Gagal mengirim konfirmasi kehadiran.'
+  } finally {
+    isSendingRsvp.value = false
+  }
 }
 
-// Wishes Reactive State
+// Wishes Reactive State & Infinite Scrolling
 const wishName = ref('')
 const wishMessage = ref('')
-const defaultWishes = [
-  {
-    name: 'Satrio & Istri',
-    date: '09 June 2026, 09:00',
-    message: 'Wishing you a lifetime filled with endless love, gentle laughter, and countless beautiful moments together. Happy Wedding!',
-  },
-  {
-    name: 'Nabila & Dwi',
-    date: '08 June 2026, 14:15',
-    message: 'Selamat menempuh hidup baru Sari & Zahron! Semoga menjadi keluarga yang sakinah, mawaddah, dan warahmah.',
-  },
-  {
-    name: 'Dimas & Keluarga',
-    date: '07 June 2026, 19:30',
-    message: 'Barakallahu lakuma wa baraka alaikuma wa jama\'a bainakuma fii khoir. Selamat ya!',
-  },
-]
 const userWishes = ref([])
-const visibleCount = ref(3)
+const visibleCount = ref(6)
+const isSendingWish = ref(false)
+const wishFeedback = ref('')
+const showWishPopup = ref(false)
+
+watch(
+  () => tamu.value?.namaTamu,
+  (name) => {
+    if (name && !wishName.value) {
+      wishName.value = name
+    }
+  },
+  { immediate: true }
+)
 
 const allWishes = computed(() => {
-  return [...userWishes.value, ...defaultWishes]
+  const dynamic = ucapanList.value || []
+  return [...userWishes.value, ...dynamic]
 })
 
 const visibleWishes = computed(() => {
   return allWishes.value.slice(0, visibleCount.value)
 })
 
-function handleSendWish() {
+function handleWishScroll(e) {
+  const el = e?.target
+  if (!el) return
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
+    if (visibleCount.value < allWishes.value.length) {
+      visibleCount.value += 6
+    }
+  }
+}
+
+async function handleSendWish() {
   if (!wishName.value.trim() || !wishMessage.value.trim()) {
-    alert('Mohon lengkapi nama dan ucapan Anda.')
+    wishFeedback.value = 'Mohon lengkapi nama dan ucapan Anda.'
     return
   }
-  userWishes.value.unshift({
-    name: wishName.value.trim(),
-    date: 'Baru saja',
-    message: wishMessage.value.trim(),
-  })
-  wishName.value = ''
-  wishMessage.value = ''
-  alert('Terima kasih atas doa dan ucapannya!')
+  isSendingWish.value = true
+  wishFeedback.value = ''
+  try {
+    await submitGuestUcapan({
+      nama: wishName.value.trim(),
+      ucapan: wishMessage.value.trim(),
+      status_kehadiran: rsvpAttending.value || 'Hadir',
+    })
+    wishMessage.value = ''
+    showWishPopup.value = true
+  } catch (err) {
+    console.error('[handleSendWish] Error:', err)
+    wishFeedback.value = err?.message || 'Gagal mengirim ucapan.'
+  } finally {
+    isSendingWish.value = false
+  }
 }
 
 function showMoreWishes() {
-  visibleCount.value += 3
+  visibleCount.value += 6
 }
 </script>
 
@@ -507,7 +568,7 @@ function showMoreWishes() {
           <img alt="" style="position: absolute; height: 128.08%; left: 0; max-width: none; top: -8.46%; width: 100%" :src="imgB38F9Ec16289496F8314878C82Adb01F6" />
         </div>
       </div>
-      <div style="position: absolute; height: 1055px; left: -62px; top: 5176px; width: 721px" data-node-id="58:4" data-name="536e6f84-5c28-4191-805a-62999e5945eb 1">
+      <div style="position: absolute; height: 1055px; left: -62px; top: 5176px; width: 721px; pointer-events: none;" data-node-id="58:4" data-name="536e6f84-5c28-4191-805a-62999e5945eb 1">
         <img alt="" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; max-width: none; object-fit: cover; opacity: 0.78; pointer-events: none; width: 100%; height: 100%" :src="img536E6F845C284191805A62999E5945Eb1" />
       </div>
       <div style="position: absolute; background-color: #595a52; height: 525px; left: -44px; top: 1859px; width: 654px" data-node-id="58:5" />
@@ -622,7 +683,7 @@ function showMoreWishes() {
           <img alt="" style="position: absolute; height: 128.08%; left: 0; max-width: none; top: -8.46%; width: 100%" :src="imgB38F9Ec16289496F8314878C82Adb01F6" />
         </div>
       </div>
-      <div style="position: absolute; height: 1044px; left: -159px; top: 5822px; width: 914px" data-node-id="58:29" data-name="b38f9ec1-6289-496f-8314-878c82adb01f 4">
+      <div style="position: absolute; height: 1044px; left: -159px; top: 5822px; width: 914px; pointer-events: none;" data-node-id="58:29" data-name="b38f9ec1-6289-496f-8314-878c82adb01f 4">
         <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none">
           <img alt="" style="position: absolute; height: 128.08%; left: 0; max-width: none; top: -8.46%; width: 100%" :src="imgB38F9Ec16289496F8314878C82Adb01F6" />
         </div>
@@ -884,7 +945,7 @@ function showMoreWishes() {
         <img alt="" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; max-width: none; object-fit: cover; pointer-events: none; width: 100%; height: 100%" :src="imgA12E6Eae594F46809Be59966Aabdf614Copy2" />
       </div>
       <p style="word-break: break-word; position: absolute; font-family: 'Monomakh', serif, sans-serif; font-weight: 400; height: 42px; line-height: 34px; left: calc(50% - 2.5px); font-style: normal; color: #686868; font-size: 34px; text-align: center; top: 996px; width: 601px; transform: translateX(-50%)" data-node-id="58:98">
-        AKAD NIKAH
+        {{ acaraList[0]?.title || 'AKAD NIKAH' }}
       </p>
       <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 26px; line-height: 14px; left: 50%; font-style: normal; color: #494937; font-size: 17px; text-align: center; top: 975px; width: 210px; transform: translateX(-50%)" data-node-id="58:99">
         DETAIL IMPLEMENTASI
@@ -898,17 +959,17 @@ function showMoreWishes() {
       <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 18px; line-height: 14px; left: calc(50% - 110px); font-style: normal; font-size: 16px; color: #000000; top: 1458px; width: 164px" data-node-id="58:102">
         TAMU UNDANGAN
       </p>
-      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 18px; line-height: 14px; left: calc(50% - 110px); font-style: normal; font-size: 16px; color: #000000; top: 1106px; width: 199px" data-node-id="58:103">
-        Sabtu, 14 November 2026
+      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 18px; line-height: 14px; left: calc(50% - 110px); font-style: normal; font-size: 16px; color: #000000; top: 1106px; width: 318px" data-node-id="58:103">
+        {{ acaraList[0]?.tanggal || acaraList[0]?.event_date || 'Sabtu, 14 November 2026' }}
       </p>
       <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 18px; line-height: 14px; left: calc(50% - 110px); font-style: normal; font-size: 16px; color: #000000; top: 1261px; width: 318px" data-node-id="58:104">
-        Masjid Agung Gresik, Lantai 2 (Sisi Barat)
+        {{ acaraList[0]?.location_name || 'Masjid Agung Gresik, Lantai 2 (Sisi Barat)' }}
       </p>
       <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 18px; line-height: 14px; left: calc(50% - 110px); font-style: normal; font-size: 16px; color: #000000; top: 1478px; width: 285px" data-node-id="58:105">
-        Keluarga, Kerabat, dan Sahabat Terpilih
+        {{ tamu.namaTamu || 'Keluarga, Kerabat, dan Sahabat Terpilih' }}
       </p>
       <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 43px; line-height: 17px; left: calc(50% - 110px); font-style: normal; font-size: 14px; color: #000000; top: 1281px; width: 294px" data-node-id="58:106">
-        Jalan Dr. Wahidin S.H. (Simpang Tiga Sumber), Kembangan, Kecamatan Kebomas, Kabupaten Gresik, Jawa Timur
+        {{ acaraList[0]?.address || 'Jalan Dr. Wahidin S.H. (Simpang Tiga Sumber), Kembangan, Kecamatan Kebomas, Kabupaten Gresik, Jawa Timur' }}
       </p>
       <div style="position: absolute; height: 53px; left: 223px; top: 899px; width: 151px" data-node-id="58:107" data-name="Ikon Rumah dan Hati Berornamen 1">
         <img alt="" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; max-width: none; object-fit: cover; pointer-events: none; width: 100%; height: 100%" :src="imgIkonRumahDanHatiBerornamen1" />
@@ -970,7 +1031,7 @@ function showMoreWishes() {
         <p style="word-break: break-word; position: absolute; font-family: '42dot Sans', serif, sans-serif; font-weight: 800; height: 29px; line-height: 15px; left: calc(50% - 232px); font-size: 10px; color: #ffffff; top: 25px; width: 108px" data-node-id="58:126">
           PROYEK STRATEGIS RUMAH TANGGA
         </p>
-        <p style="word-break: break-word; position: absolute; font-family: '42dot Sans', serif, sans-serif; font-weight: 800; height: 16px; line-height: 15px; left: calc(50% - 232px); color: #ffeb86; font-size: 11px; top: 56px; width: 91px" data-node-id="58:127">SARI & ZAHRON</p>
+        <p style="word-break: break-word; position: absolute; font-family: '42dot Sans', serif, sans-serif; font-weight: 800; height: 16px; line-height: 15px; left: calc(50% - 232px); color: #ffeb86; font-size: 11px; top: 56px; width: 91px" data-node-id="58:127">{{ (coupleOrder.title || 'SARI & ZAHRON').toUpperCase() }}</p>
         <div style="position: absolute; left: 18px; width: 45px; height: 45px; top: 25px" data-node-id="58:128" data-name="Ikon Rumah dan Hati Berornamen 2">
           <img alt="" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; max-width: none; object-position: bottom; pointer-events: none; width: 100%; height: 100%" :src="imgIkonRumahDanHatiBerornamen2" />
         </div>
@@ -985,10 +1046,10 @@ function showMoreWishes() {
       </div>
       <div style="position: absolute; display: contents; left: 242px; top: 1795px" data-node-id="58:135">
         <p style="word-break: break-word; position: absolute; font-family: 'Playfair Display', serif, sans-serif; font-weight: 400; height: 39px; line-height: 16px; left: 278px; color: #dbc58e; font-size: 48px; text-align: center; top: 1801px; width: 72px; transform: translateX(-50%)" data-node-id="58:136">
-          S
+          {{ (coupleOrder.first?.namaPanggilan?.[0] || 'S').toUpperCase() }}
         </p>
         <p style="word-break: break-word; position: absolute; font-family: 'Playfair Display', serif, sans-serif; font-weight: 400; height: 39px; line-height: 16px; left: 318px; color: #dbc58e; font-size: 48px; text-align: center; top: 1801px; width: 72px; transform: translateX(-50%)" data-node-id="58:137">
-          Z
+          {{ (coupleOrder.second?.namaPanggilan?.[0] || 'Z').toUpperCase() }}
         </p>
         <div style="position: absolute; display: flex; height: 39px; align-items: center; justify-content: center; left: 298px; top: 1795px; width: 0" data-node-id="58:138">
           <div style="flex: none; transform: rotate(90deg)">
@@ -1053,13 +1114,20 @@ function showMoreWishes() {
       </div>
 
       <!-- 58:149 Sari Uswatun Chasanah, S.T. (Calligraphy Name) -->
-      <div style="position: absolute; display: flex; align-items: center; justify-content: center; left: 21px; top: 2963px; width: 427px; height: 50px;" data-node-id="58:149" title="Sari Uswatun Chasanah, S.T.">
-        <img alt="Sari Uswatun Chasanah, S.T." style="max-height: 100%; max-width: 100%; object-fit: contain; pointer-events: none;" :src="imgBrideNameCalligraphy" />
+      <div style="position: absolute; display: flex; align-items: center; justify-content: center; left: 21px; top: 2963px; width: 427px; min-height: 50px;" data-node-id="58:149" :title="mempelaiWanita.namaLengkap">
+        <template v-if="mempelaiWanita.namaLengkap === 'Sari Uswatun Chasanah, S.T.'">
+          <img alt="Sari Uswatun Chasanah, S.T." style="max-height: 100%; max-width: 100%; object-fit: contain; pointer-events: none;" :src="imgBrideNameCalligraphy" />
+        </template>
+        <template v-else>
+          <p style="margin: 0; font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: #585951; text-align: center;">
+            {{ mempelaiWanita.namaLengkap }}
+          </p>
+        </template>
       </div>
 
       <!-- 58:145 Putri Pertama dari Bapak Seneng Latif dan Ibu Khoirul Insani -->
       <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: auto; line-height: 29px; left: 47px; font-style: normal; color: #585951; font-size: 22px; top: 3020px; width: 409px; margin: 0;" data-node-id="58:145">
-        Putri Pertama dari Bapak Seneng Latif<br />dan Ibu Khoirul Insani
+        {{ mempelaiWanita.urutanAnak }} Bapak {{ mempelaiWanita.ayah }}<br />dan Ibu {{ mempelaiWanita.ibu }}
       </p>
 
       <!-- 58:234 Bouquet behind groom -->
@@ -1084,24 +1152,31 @@ function showMoreWishes() {
       </div>
 
       <!-- 58:150 Ar. Zahron Syauqi, S.T. (Calligraphy Name) -->
-      <div style="position: absolute; display: flex; align-items: center; justify-content: center; left: 120px; top: 3793px; width: 427px; height: 55px;" data-node-id="58:150" title="Ar. Zahron Syauqi, S.T.">
-        <img alt="Ar. Zahron Syauqi, S.T." style="max-height: 100%; max-width: 100%; object-fit: contain; pointer-events: none;" :src="imgGroomNameCalligraphy" />
+      <div style="position: absolute; display: flex; align-items: center; justify-content: center; left: 120px; top: 3793px; width: 427px; min-height: 55px;" data-node-id="58:150" title="Ar. Zahron Syauqi, S.T.">
+        <template v-if="mempelaiPria.namaLengkap === 'Ar. Zahron Syauqi, S.T.'">
+          <img alt="Ar. Zahron Syauqi, S.T." style="max-height: 100%; max-width: 100%; object-fit: contain; pointer-events: none;" :src="imgGroomNameCalligraphy" />
+        </template>
+        <template v-else>
+          <p style="margin: 0; font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: #585951; text-align: center;">
+            {{ mempelaiPria.namaLengkap }}
+          </p>
+        </template>
       </div>
 
       <!-- 58:146 Putra Tunggal dari Bapak Muhammad Isa & Ibu Asmawati -->
       <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: auto; line-height: 29px; left: 147px; font-style: normal; color: #585951; font-size: 22px; top: 3855px; width: 409px; margin: 0;" data-node-id="58:146">
-        Putra Tunggal dari Bapak Muhammad Isa<br />&amp; Ibu Asmawati
+        {{ mempelaiPria.urutanAnak }} Bapak {{ mempelaiPria.ayah }}<br />&amp; Ibu {{ mempelaiPria.ibu }}
       </p>
       <div style="position: absolute; height: 432px; left: 270px; top: 2472px; width: 370px" data-node-id="58:151" data-name="Untitled1176_20260831071000 copy 1">
         <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none">
-          <img alt="" style="position: absolute; height: 256.88%; left: -147.06%; max-width: none; top: -18.13%; width: 300%" :src="imgUntitled117620260831071000Copy1" />
+          <img alt="Foto Mempelai Wanita" style="position: absolute; height: 256.88%; left: -147.06%; max-width: none; top: -18.13%; width: 300%; object-fit: cover;" :src="mempelaiWanita.foto || imgUntitled117620260831071000Copy1" />
         </div>
       </div>
       <div style="position: absolute; display: flex; height: 432px; align-items: center; justify-content: center; left: -42.47px; top: 3306px; width: 370px" data-node-id="58:152">
         <div style="flex: none; transform: rotate(180deg) scaleY(-1)">
           <div style="height: 432px; position: relative; width: 370px" data-name="Untitled1176_20260831071000 copy 2">
             <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none">
-              <img alt="" style="position: absolute; height: 256.88%; left: -46.37%; max-width: none; top: -4.91%; width: 300%" :src="imgUntitled117620260831071000Copy1" />
+              <img alt="Foto Mempelai Pria" style="position: absolute; height: 256.88%; left: -46.37%; max-width: none; top: -4.91%; width: 300%; object-fit: cover;" :src="mempelaiPria.foto || imgUntitled117620260831071000Copy1" />
             </div>
           </div>
         </div>
@@ -1116,7 +1191,7 @@ function showMoreWishes() {
           <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 29px; line-height: 15px; left: calc(50% - 243px); font-style: normal; font-size: 10px; color: #ffffff; top: 2389px; width: 108px" data-node-id="58:158">
             PROYEK STRATEGIS RUMAH TANGGA
           </p>
-          <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 16px; line-height: 15px; left: calc(50% - 243px); font-style: normal; color: #ffeb86; font-size: 11px; top: 2420px; width: 91px" data-node-id="58:159">SARI & ZAHRON</p>
+          <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 16px; line-height: 15px; left: calc(50% - 243px); font-style: normal; color: #ffeb86; font-size: 11px; top: 2420px; width: 91px" data-node-id="58:159">{{ (coupleOrder.title || 'SARI & ZAHRON').toUpperCase() }}</p>
         </div>
         <div style="position: absolute; left: 7px; width: 45px; height: 45px; top: 2393px" data-node-id="58:160" data-name="Ikon Rumah dan Hati Berornamen 2">
           <img alt="" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; max-width: none; object-position: bottom; pointer-events: none; width: 100%; height: 100%" :src="imgIkonRumahDanHatiBerornamen2" />
@@ -1132,7 +1207,7 @@ function showMoreWishes() {
           <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 29px; line-height: 15px; left: calc(50% + 181px); font-style: normal; font-size: 10px; color: #ffffff; top: 3216px; width: 108px" data-node-id="58:166">
             PROYEK STRATEGIS RUMAH TANGGA
           </p>
-          <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 16px; line-height: 15px; left: calc(50% + 181px); font-style: normal; color: #56574f; font-size: 11px; top: 3247px; width: 91px" data-node-id="58:167">SARI & ZAHRON</p>
+          <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 16px; line-height: 15px; left: calc(50% + 181px); font-style: normal; color: #56574f; font-size: 11px; top: 3247px; width: 91px" data-node-id="58:167">{{ (coupleOrder.title || 'SARI & ZAHRON').toUpperCase() }}</p>
           <div style="position: absolute; left: 431px; width: 45px; height: 45px; top: 3216px" data-node-id="58:168" data-name="Ikon Rumah dan Hati Berornamen 2">
             <img alt="" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; max-width: none; object-position: bottom; pointer-events: none; width: 100%; height: 100%" :src="imgIkonRumahDanHatiBerornamen2" />
           </div>
@@ -1267,7 +1342,7 @@ function showMoreWishes() {
       <p style="word-break: break-word; position: absolute; font-family: 'Monomakh', serif, sans-serif; font-weight: 400; height: 42px; line-height: 34px; left: 50%; font-style: normal; color: #4c4848; font-size: 34px; text-align: center; top: 6598px; width: 438px; transform: translateX(-50%)" data-node-id="58:197">
         PENUTUP
       </p>
-      <p style="word-break: break-word; position: absolute; font-family: 'Playfair Display', serif, sans-serif; font-weight: 700; height: 42px; line-height: 34px; left: 50%; color: #5f8061; font-size: 41px; text-align: center; top: 6783px; width: 438px; transform: translateX(-50%)" data-node-id="58:198">Sari & Zahron</p>
+      <p style="word-break: break-word; position: absolute; font-family: 'Playfair Display', serif, sans-serif; font-weight: 700; height: 42px; line-height: 34px; left: 50%; color: #5f8061; font-size: 41px; text-align: center; top: 6783px; width: 438px; transform: translateX(-50%)" data-node-id="58:198">{{ coupleOrder.title || 'Sari & Zahron' }}</p>
       <p style="word-break: break-word; position: absolute; font-family: 'Monomakh', serif, sans-serif; font-weight: 400; height: 42px; line-height: 34px; left: calc(50% + 0.5px); font-style: normal; color: #4c4848; font-size: 34px; text-align: center; top: 6726px; width: 601px; transform: translateX(-50%)" data-node-id="58:199">
         PENETAPAN MITRA HIDUP
       </p>
@@ -1314,57 +1389,96 @@ function showMoreWishes() {
             </div>
           </div>
         </div>
-        <div style="position: absolute; background-color: #585951; filter: drop-shadow(0px 4px 2px rgba(0,0,0,0.25)); display: flex; flex-direction: column; align-items: center; justify-content: center; left: 58.43px; padding-left: 24px; padding-right: 24px; padding-top: 12px; padding-bottom: 12px; border-radius: 99px; top: 5371px; width: 483.82px" data-node-id="58:215" data-name="Button">
+        <div style="position: absolute; background-color: #585951; filter: drop-shadow(0px 4px 2px rgba(0,0,0,0.25)); display: flex; flex-direction: column; align-items: center; justify-content: center; left: 58.43px; padding-left: 24px; padding-right: 24px; padding-top: 12px; padding-bottom: 12px; border-radius: 99px; top: 5371px; width: 483.82px; cursor: pointer;" data-node-id="58:215" data-name="Button" role="button" tabindex="0" @click="handleSendRsvp">
           <p style="word-break: break-word; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; line-height: 30px; font-style: normal; position: relative; flex-shrink: 0; font-size: 20px; text-align: center; color: #ffffff; white-space: nowrap" data-node-id="58:216">
-            Send
+            {{ isSendingRsvp ? 'Mengirim...' : (rsvpSubmitted ? '✓ Konfirmasi Terkirim' : 'Send') }}
           </p>
         </div>
+        <p v-if="rsvpFeedback" style="position: absolute; top: 5430px; left: 50%; transform: translateX(-50%); width: 480px; text-align: center; font-family: 'Times New Roman', serif; font-size: 15px; font-weight: 700; color: #2e5430;">
+          {{ rsvpFeedback }}
+        </p>
       </div>
-      <div style="position: absolute; height: 405px; left: calc(50% - 189px); top: 7120px; width: 260px; transform: translateX(-50%)" data-node-id="58:217" data-name="Untitled1176_20260831071000 copy 3">
+      <div style="position: absolute; height: 405px; left: calc(50% - 189px); top: 7120px; width: 260px; transform: translateX(-50%); pointer-events: none;" data-node-id="58:217" data-name="Untitled1176_20260831071000 copy 3">
         <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none">
           <img alt="" style="position: absolute; height: 180.25%; left: -36.54%; max-width: none; top: 0; width: 280.77%" :src="imgUntitled117620260831071000Copy1" />
         </div>
       </div>
-      <div style="position: absolute; height: 405px; left: calc(50% + 172px); top: 7125px; width: 260px; transform: translateX(-50%)" data-node-id="58:218" data-name="Untitled1176_20260831071000 copy 4">
+      <div style="position: absolute; height: 405px; left: calc(50% + 172px); top: 7125px; width: 260px; transform: translateX(-50%); pointer-events: none;" data-node-id="58:218" data-name="Untitled1176_20260831071000 copy 4">
         <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none">
           <img alt="" style="position: absolute; height: 180.25%; left: -129.71%; max-width: none; top: -3.93%; width: 280.77%" :src="imgUntitled117620260831071000Copy1" />
         </div>
       </div>
-      <div style="position: absolute; background-color: #ffffff; border-color: #6a4040; border-width: 0.8px; border-style: solid; display: flex; flex-direction: column; height: 90px; left: 20px; border-radius: 11px; top: 5668px; width: 556px; padding: 10px 14px; box-sizing: border-box" data-node-id="58:219">
-        <textarea v-model="wishMessage" placeholder="Tuliskan ucapan dan doa restu Anda..." style="width: 100%; height: 100%; border: none; outline: none; background: transparent; resize: none; font-family: 'Bellefair', serif, sans-serif; font-size: 18px; color: #333333"></textarea>
+
+      <!-- Wish Name Input Container (top: 5598px) -->
+      <div style="position: absolute; background-color: #ffffff; border-color: #6a4040; border-width: 0.8px; border-style: solid; height: 56px; left: 20px; border-radius: 8px; top: 5598px; width: 556px; padding: 8px 14px; box-sizing: border-box; z-index: 40; pointer-events: auto;" data-node-id="58:225">
+        <input v-model="wishName" type="text" placeholder="Nama Anda" class="interactive-input" style="width: 100%; height: 100%; border: none; outline: none; background: transparent; font-family: 'Bellefair', serif, sans-serif; font-size: 20px; color: #333333; position: relative; z-index: 41; pointer-events: auto; cursor: text;" />
       </div>
-      <div style="position: absolute; background-color: #585951; display: flex; flex-direction: column; align-items: center; justify-content: center; left: 50%; padding-left: 24px; padding-right: 24px; padding-top: 12px; padding-bottom: 12px; border-radius: 99px; top: 5780px; width: 484px; transform: translateX(-50%); cursor: pointer" data-node-id="58:221" data-name="Button" @click="handleSendWish" role="button" tabindex="0">
+
+      <!-- Wish Message Textarea Container (top: 5668px) -->
+      <div style="position: absolute; background-color: #ffffff; border-color: #6a4040; border-width: 0.8px; border-style: solid; display: flex; flex-direction: column; height: 90px; left: 20px; border-radius: 11px; top: 5668px; width: 556px; padding: 10px 14px; box-sizing: border-box; z-index: 40; pointer-events: auto;" data-node-id="58:219">
+        <textarea v-model="wishMessage" placeholder="Tuliskan ucapan dan doa restu Anda..." class="interactive-input" style="width: 100%; height: 100%; border: none; outline: none; background: transparent; resize: none; font-family: 'Bellefair', serif, sans-serif; font-size: 18px; color: #333333; position: relative; z-index: 41; pointer-events: auto; cursor: text;"></textarea>
+      </div>
+
+      <!-- Send Wish Button (top: 5780px) -->
+      <div style="position: absolute; background-color: #585951; display: flex; flex-direction: column; align-items: center; justify-content: center; left: 50%; padding-left: 24px; padding-right: 24px; padding-top: 12px; padding-bottom: 12px; border-radius: 99px; top: 5780px; width: 484px; transform: translateX(-50%); cursor: pointer; z-index: 40; pointer-events: auto;" data-node-id="58:221" data-name="Button" @click="handleSendWish" role="button" tabindex="0">
         <p style="word-break: break-word; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; line-height: 30px; font-style: normal; position: relative; flex-shrink: 0; font-size: 20px; text-align: center; color: #ffffff; white-space: nowrap" data-node-id="58:222">
-          Send
+          {{ isSendingWish ? 'Mengirim...' : 'Send' }}
         </p>
       </div>
-      <div style="position: absolute; background-color: #585951; display: flex; flex-direction: column; align-items: center; justify-content: center; left: 50%; padding-left: 24px; padding-right: 24px; padding-top: 12px; padding-bottom: 12px; border-radius: 99px; top: 6433px; width: 484px; transform: translateX(-50%); cursor: pointer" data-node-id="58:223" data-name="Button" @click="showMoreWishes" role="button" tabindex="0">
+
+      <p v-if="wishFeedback" style="position: absolute; top: 5836px; left: 50%; transform: translateX(-50%); width: 480px; text-align: center; font-family: 'Times New Roman', serif; font-size: 15px; font-weight: 700; color: #2e5430; z-index: 40; pointer-events: auto;">
+        {{ wishFeedback }}
+      </p>
+
+      <div v-if="visibleCount < allWishes.length" style="position: absolute; background-color: #585951; display: flex; flex-direction: column; align-items: center; justify-content: center; left: 50%; padding-left: 24px; padding-right: 24px; padding-top: 12px; padding-bottom: 12px; border-radius: 99px; top: 6433px; width: 484px; transform: translateX(-50%); cursor: pointer; z-index: 40; pointer-events: auto;" data-node-id="58:223" data-name="Button" @click="showMoreWishes" role="button" tabindex="0">
         <p style="word-break: break-word; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; line-height: 30px; font-style: normal; position: relative; flex-shrink: 0; font-size: 20px; text-align: center; color: #ffffff; white-space: nowrap" data-node-id="58:224">
           Show more
         </p>
       </div>
-      <div style="position: absolute; background-color: #ffffff; border-color: #6a4040; border-width: 0.8px; border-style: solid; height: 56px; left: 20px; border-radius: 8px; top: 5598px; width: 556px; padding: 8px 14px; box-sizing: border-box" data-node-id="58:225">
-        <input v-model="wishName" type="text" placeholder="Nama Anda" style="width: 100%; height: 100%; border: none; outline: none; background: transparent; font-family: 'Bellefair', serif, sans-serif; font-size: 20px; color: #333333" />
+
+      <!-- Dynamic Wishes List with Infinite Scroll and Default Empty State -->
+      <div
+        class="wishes-scroll-container"
+        @scroll="handleWishScroll"
+        style="position: absolute; top: 5876px; left: 50%; transform: translateX(-50%); width: 500px; height: 535px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding-right: 6px; z-index: 40; pointer-events: auto;"
+      >
+        <!-- Empty State if no wishes yet -->
+        <div
+          v-if="allWishes.length === 0"
+          style="background: rgba(255, 255, 255, 0.92); border: 1.5px dashed #747a75; border-radius: 12px; padding: 36px 20px; text-align: center; margin: 40px auto 0; width: 88%; box-sizing: border-box;"
+        >
+          <div style="font-size: 32px; margin-bottom: 10px;">🕊️</div>
+          <p style="margin: 0 0 6px; font-family: 'Times New Roman', serif; font-weight: 700; font-size: 19px; color: #353a20;">
+            Belum Ada Ucapan
+          </p>
+          <p style="margin: 0; font-family: 'Times New Roman', serif; font-size: 14px; line-height: 20px; color: #666;">
+            Jadilah yang pertama memberikan ucapan dan doa restu untuk kedua mempelai.
+          </p>
+        </div>
+
+        <div
+          v-for="(w, idx) in visibleWishes"
+          :key="w.id || idx"
+          style="background: rgba(255, 255, 255, 0.9); border: 1px solid #c0b8ba; border-radius: 12px; padding: 14px 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"
+        >
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+            <span style="font-family: 'Times New Roman', serif; font-weight: 700; font-size: 18px; color: #353a20;">
+              {{ w.guest_name || w.nama || w.name || 'Tamu Undangan' }}
+            </span>
+            <span style="font-family: 'Times New Roman', serif; font-size: 12px; color: #777;">
+              {{ w.created_at || w.date || 'Baru saja' }}
+            </span>
+          </div>
+          <p style="margin: 0; font-family: 'Times New Roman', serif; font-size: 15px; line-height: 22px; color: #444; word-break: break-word;">
+            {{ w.message || w.ucapan }}
+          </p>
+          <div v-if="w.status_kehadiran || w.attendance_status" style="margin-top: 6px;">
+            <span style="display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: #e8ecdf; color: #495437;">
+              {{ w.status_kehadiran || (w.attendance_status === 'hadir' ? 'Hadir' : w.attendance_status === 'tidak_hadir' ? 'Tidak Hadir' : 'Ragu-ragu') }}
+            </span>
+          </div>
+        </div>
       </div>
-      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 400; line-height: 27px; left: 89px; font-style: normal; color: #455d69; font-size: 18px; top: 5886px; white-space: nowrap" data-node-id="58:227">
-        09 June 2025, 09:00
-      </p>
-      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 400; line-height: 27px; left: 90px; font-style: normal; color: #455d69; font-size: 18px; top: 6072px; white-space: nowrap" data-node-id="58:228">
-        09 June 2025, 09:00
-      </p>
-      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 400; line-height: 27px; left: 89px; font-style: normal; color: #455d69; font-size: 18px; top: 6258px; white-space: nowrap" data-node-id="58:229">
-        09 June 2025, 09:00
-      </p>
-      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; line-height: 30px; left: 89px; font-style: normal; color: #455d69; font-size: 24px; top: 6228px; white-space: nowrap" data-node-id="58:230">Satrio & Istri</p>
-      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; line-height: 30px; left: 88px; font-style: normal; color: #455d69; font-size: 20px; top: 5913px; width: 427px" data-node-id="58:231">
-        Wishing you a lifetime filled with endless love, gentle laughter, and countless beautiful moments together. Happy Wedding!
-      </p>
-      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; line-height: 30px; left: 89px; font-style: normal; color: #455d69; font-size: 20px; top: 6099px; width: 427px" data-node-id="58:232">
-        Wishing you a lifetime filled with endless love, gentle laughter, and countless beautiful moments together. Happy Wedding!
-      </p>
-      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 90px; line-height: 30px; left: 88px; font-style: normal; color: #455d69; font-size: 20px; top: 6285px; width: 427px" data-node-id="58:233">
-        Wishing you a lifetime filled with endless love, gentle laughter, and countless beautiful moments together. Happy Wedding!
-      </p>
 
       <div style="position: absolute; display: flex; align-items: center; justify-content: center; left: 478px; width: 276.049px; height: 276.049px; top: 7317px" data-node-id="58:236">
         <div style="flex: none; transform: rotate(-155.21deg) scaleY(-1)">
@@ -1498,22 +1612,22 @@ function showMoreWishes() {
           <img alt="" style="position: absolute; height: 389.04%; left: -66.22%; max-width: none; top: -97.63%; width: 228.95%" :src="imgIkonLencanaMaroonDanEmas3" />
         </div>
       </div>
-      <div style="position: absolute; left: 378px; width: 509px; height: 509px; top: 5601px" data-node-id="58:265" data-name="zeniaraustri_99855_None_e4d8ae5e-32b4-4aee-aa4c-09154bb75ebb-Photoroom 5">
+      <div style="position: absolute; left: 378px; width: 509px; height: 509px; top: 5601px; pointer-events: none;" data-node-id="58:265" data-name="zeniaraustri_99855_None_e4d8ae5e-32b4-4aee-aa4c-09154bb75ebb-Photoroom 5">
         <img alt="" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; max-width: none; object-fit: cover; pointer-events: none; width: 100%; height: 100%" :src="imgZeniaraustri99855NoneE4D8Ae5E32B44AeeAa4C09154Bb75EbbPhotoroom1" />
       </div>
-      <div style="position: absolute; display: flex; align-items: center; justify-content: center; left: -288px; width: 509px; height: 509px; top: 5601px" data-node-id="58:266">
-        <div style="flex: none; transform: rotate(180deg) scaleY(-1)">
-          <div style="position: relative; width: 509px; height: 509px" data-name="zeniaraustri_99855_None_e4d8ae5e-32b4-4aee-aa4c-09154bb75ebb-Photoroom 6">
+      <div style="position: absolute; display: flex; align-items: center; justify-content: center; left: -288px; width: 509px; height: 509px; top: 5601px; pointer-events: none;" data-node-id="58:266">
+        <div style="flex: none; transform: rotate(180deg) scaleY(-1); pointer-events: none;">
+          <div style="position: relative; width: 509px; height: 509px; pointer-events: none;" data-name="zeniaraustri_99855_None_e4d8ae5e-32b4-4aee-aa4c-09154bb75ebb-Photoroom 6">
             <img alt="" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; max-width: none; object-fit: cover; pointer-events: none; width: 100%; height: 100%" :src="imgZeniaraustri99855NoneE4D8Ae5E32B44AeeAa4C09154Bb75EbbPhotoroom1" />
           </div>
         </div>
       </div>
-      <div style="position: absolute; height: 302px; left: -40px; top: 6003px; width: 121px" data-node-id="58:267" data-name="45c2b650-df5f-4a35-8d0e-70aa666cab18 4">
+      <div style="position: absolute; height: 302px; left: -40px; top: 6003px; width: 121px; pointer-events: none;" data-node-id="58:267" data-name="45c2b650-df5f-4a35-8d0e-70aa666cab18 4">
         <img alt="" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; max-width: none; object-fit: cover; pointer-events: none; width: 100%; height: 100%" :src="img45C2B650Df5F4A358D0E70Aa666Cab184" />
       </div>
-      <div style="position: absolute; display: flex; height: 302px; align-items: center; justify-content: center; left: 515px; top: 6005px; width: 121px" data-node-id="58:268">
-        <div style="flex: none; transform: rotate(180deg) scaleY(-1)">
-          <div style="height: 302px; position: relative; width: 121px" data-name="45c2b650-df5f-4a35-8d0e-70aa666cab18 5">
+      <div style="position: absolute; display: flex; height: 302px; align-items: center; justify-content: center; left: 515px; top: 6005px; width: 121px; pointer-events: none;" data-node-id="58:268">
+        <div style="flex: none; transform: rotate(180deg) scaleY(-1); pointer-events: none;">
+          <div style="height: 302px; position: relative; width: 121px; pointer-events: none;" data-name="45c2b650-df5f-4a35-8d0e-70aa666cab18 5">
             <img alt="" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; max-width: none; object-fit: cover; pointer-events: none; width: 100%; height: 100%" :src="img45C2B650Df5F4A358D0E70Aa666Cab184" />
           </div>
         </div>
@@ -1536,13 +1650,11 @@ function showMoreWishes() {
           </div>
         </div>
       </div>
-      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; line-height: 30px; left: 89px; font-style: normal; color: #455d69; font-size: 24px; top: 5856px; white-space: nowrap" data-node-id="58:271">Satrio & Istri</p>
-      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; line-height: 30px; left: 90px; font-style: normal; color: #455d69; font-size: 24px; top: 6042px; white-space: nowrap" data-node-id="58:272">Satrio & Istri</p>
       <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 18px; line-height: 14px; left: calc(50% - 107px); font-style: normal; font-size: 16px; color: #000000; top: 1146px; width: 164px" data-node-id="58:273">
         WAKTU
       </p>
-      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 18px; line-height: 14px; left: calc(50% - 107px); font-style: normal; font-size: 16px; color: #000000; top: 1168px; width: 199px" data-node-id="58:274">
-        09.00 s.d 10.00 WIB
+      <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 18px; line-height: 14px; left: calc(50% - 107px); font-style: normal; font-size: 16px; color: #000000; top: 1168px; width: 220px" data-node-id="58:274">
+        {{ (acaraList[0]?.time_start && acaraList[0]?.time_end) ? `${acaraList[0].time_start} s.d ${acaraList[0].time_end} ${acaraList[0].time_zone || 'WIB'}` : '09.00 s.d 10.00 WIB' }}
       </p>
       <div style="position: absolute; height: 44px; left: 118px; top: 1142px; width: 69px" data-node-id="58:275" data-name="Ikon Kalender, Lokasi, Jam, dan Pengguna 3">
         <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none">
@@ -1608,6 +1720,50 @@ function showMoreWishes() {
 
   <!-- Detail Konstruksi Modal (Figma node 58:394) -->
   <DetailKonstruksiModal :is-open="isDetailKonstruksiOpen" @close="closeDetailKonstruksi" />
+
+  <!-- RSVP Success Popup -->
+  <Teleport to="body">
+    <Transition name="popup-fade">
+      <div v-if="showRsvpPopup" class="action-popup-backdrop" @click.self="showRsvpPopup = false" role="dialog" aria-modal="true">
+        <div class="action-popup-box">
+          <div class="action-popup-icon-wrapper">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#3e5f48" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+          </div>
+          <h3 class="action-popup-title">Konfirmasi Terkirim!</h3>
+          <p class="action-popup-desc">
+            Terima kasih atas konfirmasi kehadiran Anda. Data Anda telah berhasil kami catat.
+          </p>
+          <button type="button" class="action-popup-btn" @click="showRsvpPopup = false">
+            Tutup
+          </button>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- Wishes Success Popup -->
+  <Teleport to="body">
+    <Transition name="popup-fade">
+      <div v-if="showWishPopup" class="action-popup-backdrop" @click.self="showWishPopup = false" role="dialog" aria-modal="true">
+        <div class="action-popup-box">
+          <div class="action-popup-icon-wrapper">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#3e5f48" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+          </div>
+          <h3 class="action-popup-title">Ucapan Terkirim!</h3>
+          <p class="action-popup-desc">
+            Terima kasih atas doa restu dan ucapan hangat yang Anda berikan kepada kedua mempelai.
+          </p>
+          <button type="button" class="action-popup-btn" @click="showWishPopup = false">
+            Tutup
+          </button>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -1638,6 +1794,26 @@ function showMoreWishes() {
 .isi-canvas h4 {
   margin: 0;
   padding: 0;
+}
+
+/* Ensure interactive inputs and form containers are always clickable and elevated above backgrounds */
+.interactive-input {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 50 !important;
+  cursor: text !important;
+}
+
+[data-node-id="58:219"],
+[data-node-id="58:225"],
+[data-node-id="58:221"] {
+  z-index: 40 !important;
+  pointer-events: auto !important;
+}
+
+.wishes-scroll-container {
+  z-index: 40 !important;
+  pointer-events: auto !important;
 }
 
 /* Button hover micro-interactions */
@@ -1840,6 +2016,104 @@ function showMoreWishes() {
     translate: none !important;
     scale: none !important;
     transition: none !important;
+  }
+}
+
+/* Action Popup (RSVP & Wishes) */
+.action-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999999;
+  background: rgba(15, 20, 16, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.action-popup-box {
+  background: #ffffff;
+  border-radius: 16px;
+  max-width: 360px;
+  width: 100%;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(197, 160, 89, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: popupScale 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.action-popup-icon-wrapper {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #eef4ee;
+  border: 1.5px solid #557d60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.action-popup-title {
+  margin: 0 0 8px;
+  font-family: 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 22px;
+  color: #2b332b;
+}
+
+.action-popup-desc {
+  margin: 0 0 20px;
+  font-family: 'Times New Roman', serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #555555;
+}
+
+.action-popup-btn {
+  background: #3e5f48;
+  color: #ffffff;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 32px;
+  font-family: 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(62, 95, 72, 0.3);
+  transition: all 0.2s ease;
+}
+
+.action-popup-btn:hover {
+  background: #4a7256;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(62, 95, 72, 0.4);
+}
+
+.popup-fade-enter-active,
+.popup-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.popup-fade-enter-from,
+.popup-fade-leave-to {
+  opacity: 0;
+}
+
+@keyframes popupScale {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 </style>

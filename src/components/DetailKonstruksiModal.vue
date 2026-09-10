@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { imgDetailKonstruksi } from '../assets.js'
+import { useWedding } from '../composables/useWedding'
 
 const props = defineProps({
   isOpen: {
@@ -11,6 +12,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
+const { acaraList } = useWedding()
 const isZoomed = ref(false)
 
 function handleKeydown(e) {
@@ -20,7 +22,8 @@ function handleKeydown(e) {
 }
 
 function openMaps() {
-  window.open('https://maps.google.com/?q=Masjid+Agung+Gresik', '_blank')
+  const url = acaraList.value?.[0]?.map_url || 'https://maps.google.com/?q=Masjid+Agung+Gresik'
+  window.open(url, '_blank')
 }
 
 function toggleZoom() {

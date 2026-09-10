@@ -1,26 +1,37 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watchEffect } from 'vue'
 import PreloaderScreen from './components/PreloaderScreen.vue'
 import CoverDepan from './components/CoverDepan.vue'
 import IsiUndangan from './components/IsiUndangan.vue'
 import FloatingMusic from './components/FloatingMusic.vue'
+import { useWedding } from './composables/useWedding'
+
+const { wedding, coupleOrder, tamu } = useWedding()
 
 const isLoading = ref(true)
 const isCoverActive = ref(false)
 const isOpened = ref(false)
 const showCoverModal = ref(true)
-const guestName = ref('NAMA TAMU UNDANGAN')
 const musicRef = ref(null)
 
+watchEffect(() => {
+  if (wedding.value?.title) {
+    document.title = wedding.value.title
+  } else if (coupleOrder.value?.title) {
+    document.title = `The Wedding Of ${coupleOrder.value.title}`
+  } else {
+    document.title = 'The Wedding Of Sari & Zahron'
+  }
+})
+
 onMounted(() => {
-  // Parse guest name from URL query parameter (e.g., ?to=Nama+Tamu or ?guest=...)
   try {
     const params = new URLSearchParams(window.location.search)
-    const name = params.get('to') || params.get('u') || params.get('guest') || params.get('nama')
-    if (name) {
-      guestName.value = name.replace(/\+/g, ' ')
-    }
-    if (params.get('open') === '1') {
+    if (
+      params.get('open') === '1' ||
+      params.get('preview') === 'true' ||
+      params.get('preview') === '1'
+    ) {
       isLoading.value = false
       isCoverActive.value = true
       isOpened.value = true
@@ -49,12 +60,6 @@ function handleOpenInvitation() {
   }, 400)
 }
 
-function handleReopenCover() {
-  showCoverModal.value = true
-  isCoverActive.value = true
-  isOpened.value = false
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
 </script>
 
 <template>
@@ -72,7 +77,7 @@ function handleReopenCover() {
     <Transition name="cover-fade">
       <div v-if="showCoverModal" class="cover-overlay" :class="{ 'is-opening': isOpened }">
         <CoverDepan
-          :guest-name="guestName"
+          :guest-name="tamu.namaTamu"
           :is-active="isCoverActive"
           @open="handleOpenInvitation"
         />
@@ -89,22 +94,13 @@ function handleReopenCover() {
     </div>
 
     <!-- Floating Music Disc at Bottom Right (Auto-play & Vinyl Spinning) -->
-    <FloatingMusic ref="musicRef" v-if="!isLoading" />
+    <FloatingMusic
+      ref="musicRef"
+      v-if="!isLoading"
+      :src="wedding?.music || '/music.mp3'"
+    />
 
-    <!-- Floating Button to Re-open Cover Dossier (Bottom Left) -->
-    <Transition name="btn-pop">
-      <button
-        v-if="!showCoverModal"
-        type="button"
-        class="btn-reopen-cover"
-        @click="handleReopenCover"
-        title="Buka Sampul Dokumen"
-        aria-label="Lihat Sampul Dokumen"
-      >
-        <span class="btn-icon">📋</span>
-        <span class="btn-label">Sampul Dokumen</span>
-      </button>
-    </Transition>
+
   </main>
 </template>
 
@@ -192,69 +188,19 @@ function handleReopenCover() {
 
 /* Preloader Fade Transition */
 .preloader-fade-leave-active {
-  transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
 }
 
 .preloader-fade-leave-to {
   opacity: 0;
-}
-
-/* Floating Re-Open Button (Placed on Bottom-Left so Bottom-Right is reserved for Vinyl Disc) */
-.btn-reopen-cover {
-  position: fixed;
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  left: 20px;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  background-color: #747a75;
-  color: #efe1cf;
-  border: 1.5px solid #efe1cf;
-  border-radius: 30px;
-  font-family: var(--font-monomakh);
-  font-size: 14px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.btn-reopen-cover:hover {
-  background-color: #5d635e;
-  transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38);
-}
-
-.btn-icon {
-  font-size: 16px;
-}
-
-.btn-label {
-  letter-spacing: 0.5px;
-}
-
-.btn-pop-enter-active,
-.btn-pop-leave-active {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.btn-pop-enter-from,
-.btn-pop-leave-to {
-  opacity: 0;
-  transform: translateY(16px) scale(0.8);
+  transform: scale(1.04);
 }
 
 @media (max-width: 600px) {
   .canvas {
     width: 100vw;
-  }
-
-  .btn-reopen-cover {
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    left: 16px;
-    padding: 8px 14px;
-    font-size: 13px;
   }
 }
 </style>
