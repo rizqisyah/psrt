@@ -5,7 +5,7 @@ import vinylImg from '../assets/vinyl.png'
 const props = defineProps({
   src: {
     type: String,
-    default: `${import.meta.env.BASE_URL}music.mp3`,
+    default: `https://qinvi-worker.kesone01.workers.dev/Music/c5b58474-Westlife_-_Beautiful_in_White.mp3`,
   },
 })
 
