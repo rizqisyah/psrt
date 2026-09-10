@@ -15,7 +15,7 @@ const BASE = 860
 const off = (designTop) => designTop - BASE
 
 function openMaps() {
-  window.open('https://maps.google.com/?q=Masjid+Agung+Gresik', '_blank')
+  window.open('https://maps.app.goo.gl/sVkhXBxTf18JBiy6A', '_blank')
 }
 </script>
 

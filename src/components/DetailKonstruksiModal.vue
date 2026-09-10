@@ -22,7 +22,8 @@ function handleKeydown(e) {
 }
 
 function openMaps() {
-  const url = acaraList.value?.[0]?.map_url || 'https://maps.google.com/?q=Masjid+Agung+Gresik'
+  const mapUrl = acaraList.value?.[0]?.map_url
+  const url = (mapUrl && mapUrl !== 'https://maps.google.com') ? mapUrl : 'https://maps.app.goo.gl/sVkhXBxTf18JBiy6A'
   window.open(url, '_blank')
 }
 

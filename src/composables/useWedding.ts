@@ -277,7 +277,7 @@ export function useWedding() {
         time_zone: a.time_zone || 'WIB',
         location_name: a.location_name || 'Masjid Agung Gresik',
         address: a.address || '',
-        map_url: a.maps_url || a.map_url || 'https://maps.google.com',
+        map_url: a.maps_url || a.map_url || 'https://maps.app.goo.gl/sVkhXBxTf18JBiy6A',
       }))
     }
     // Default fallback acara
@@ -292,7 +292,7 @@ export function useWedding() {
         time_zone: 'WIB',
         location_name: 'Masjid Agung Al-Barkah',
         address: 'Jl. Veteran No. 46, Marga Jaya, Bekasi Selatan',
-        map_url: 'https://maps.google.com',
+        map_url: 'https://maps.app.goo.gl/sVkhXBxTf18JBiy6A',
       },
       {
         id: 2,
