@@ -966,7 +966,7 @@ function showMoreWishes() {
         {{ acaraList[0]?.location_name || 'Masjid Agung Gresik, Lantai 2 (Sisi Barat)' }}
       </p>
       <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 18px; line-height: 14px; left: calc(50% - 110px); font-style: normal; font-size: 16px; color: #000000; top: 1478px; width: 285px" data-node-id="58:105">
-        {{ tamu.namaTamu || 'Keluarga, Kerabat, dan Sahabat Terpilih' }}
+        {{ 'Keluarga, Kerabat, dan Sahabat Terpilih' }}
       </p>
       <p style="word-break: break-word; position: absolute; font-family: 'Times New Roman', serif, sans-serif; font-weight: 700; height: 43px; line-height: 17px; left: calc(50% - 110px); font-style: normal; font-size: 14px; color: #000000; top: 1281px; width: 294px" data-node-id="58:106">
         {{ acaraList[0]?.address || 'Jalan Dr. Wahidin S.H. (Simpang Tiga Sumber), Kembangan, Kecamatan Kebomas, Kabupaten Gresik, Jawa Timur' }}
