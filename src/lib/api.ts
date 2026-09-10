@@ -1,4 +1,6 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? '/api' : 'https://api.qinvi.id/api')
 const DEFAULT_SLUG = import.meta.env.VITE_DEFAULT_SLUG || 'tema-psrt'
 
 export const DESIGN_MODE =
