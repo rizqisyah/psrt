@@ -4,7 +4,7 @@ import PreloaderScreen from './components/PreloaderScreen.vue'
 import CoverDepan from './components/CoverDepan.vue'
 import IsiUndangan from './components/IsiUndangan.vue'
 import FloatingMusic from './components/FloatingMusic.vue'
-import { useWedding } from './composables/useWedding'
+import { useWedding, syncHeadMeta } from './composables/useWedding'
 
 const { wedding, coupleOrder, tamu } = useWedding()
 
@@ -15,12 +15,8 @@ const showCoverModal = ref(true)
 const musicRef = ref(null)
 
 watchEffect(() => {
-  if (wedding.value?.title) {
-    document.title = wedding.value.title
-  } else if (coupleOrder.value?.title) {
-    document.title = `The Wedding Of ${coupleOrder.value.title}`
-  } else {
-    document.title = 'The Wedding Of Sari & Zahron'
+  if (wedding.value) {
+    syncHeadMeta(wedding.value, tamu.value)
   }
 })
 

@@ -1,7 +1,9 @@
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.DEV ? '/api' : 'https://api.qinvi.id/api')
-const DEFAULT_SLUG = import.meta.env.VITE_DEFAULT_SLUG || 'tema-psrt'
+const DEFAULT_SLUG =
+  import.meta.env.VITE_DEFAULT_SLUG ||
+  (import.meta.env.DEV ? 'tema-psrt' : 'zahron-asri')
 
 export const DESIGN_MODE =
   import.meta.env.VITE_DESIGN_MODE === '1' || import.meta.env.VITE_DESIGN_MODE === 'true'

@@ -22,24 +22,117 @@ const state = ref<WeddingState>({
 })
 
 const guestCode = ref(getGuestCode())
+function setMetaTag(attrName: string, attrValue: string, content: string) {
+  if (typeof document === 'undefined' || !content) return
+  let el = document.querySelector(`meta[${attrName}="${attrValue}"]`)
+  if (!el) {
+    el = document.createElement('meta')
+    el.setAttribute(attrName, attrValue)
+    document.head.appendChild(el)
+  }
+  el.setAttribute('content', content)
+}
+
+export function syncHeadMeta(weddingData: any, guestData: any) {
+  if (typeof document === 'undefined' || !weddingData) return
+
+  const seo = weddingData?.seo_settings || {}
+  const defaultTitle = `The Wedding Of ${weddingData?.title || 'Zahron & Asri'} - Qinvi.id`
+  const defaultDesc = 'We joyfully invite you to attend our wedding'
+
+  // 1. Title Resolution (matching backend SSR)
+  let resolvedTitle = weddingData?.title || defaultTitle
+  if (guestData?.custom_og_title) {
+    resolvedTitle = guestData.custom_og_title
+  } else if (guestData?.guest_name) {
+    const parentTitle = seo.title || weddingData?.title || defaultTitle
+    resolvedTitle = `${parentTitle}`
+  } else if (seo.og?.title) {
+    resolvedTitle = seo.og.title
+  } else if (seo.title) {
+    resolvedTitle = seo.title
+  }
+  document.title = resolvedTitle
+
+  // 2. Description Resolution (matching backend SSR)
+  let resolvedDesc = `Undangan Pernikahan untuk menghadiri acara ${weddingData?.title || ''}`.trim()
+  if (guestData?.custom_og_description) {
+    resolvedDesc = guestData.custom_og_description
+  } else if (seo.og?.description) {
+    resolvedDesc = seo.og.description
+  } else if (seo.description) {
+    resolvedDesc = seo.description
+  } else {
+    resolvedDesc = defaultDesc
+  }
+
+  // 3. Image Resolution (matching backend SSR)
+  let resolvedImg = weddingData?.image_cover || ''
+  if (guestData?.custom_og_image) {
+    resolvedImg = guestData.custom_og_image
+  } else if (seo.og?.image) {
+    resolvedImg = seo.og.image
+  } else if (seo.twitter?.image) {
+    resolvedImg = seo.twitter.image
+  }
+
+  // 4. Keywords Resolution
+  let resolvedKeywords = `wedding, invitation, pernikahan, ${weddingData?.title || ''}, undangan digital`
+  if (Array.isArray(seo.keywords) && seo.keywords.length > 0) {
+    resolvedKeywords = seo.keywords.join(', ')
+  } else if (typeof seo.keywords === 'string' && seo.keywords.trim()) {
+    resolvedKeywords = seo.keywords
+  }
+
+  setMetaTag('name', 'description', resolvedDesc)
+  setMetaTag('name', 'keywords', resolvedKeywords)
+  setMetaTag('property', 'og:type', 'website')
+  setMetaTag('property', 'og:title', resolvedTitle)
+  setMetaTag('property', 'og:description', resolvedDesc)
+  if (resolvedImg) setMetaTag('property', 'og:image', resolvedImg)
+  setMetaTag('property', 'og:url', window.location.href)
+  setMetaTag('name', 'twitter:card', 'summary_large_image')
+  setMetaTag('name', 'twitter:title', resolvedTitle)
+  setMetaTag('name', 'twitter:description', resolvedDesc)
+  if (resolvedImg) setMetaTag('name', 'twitter:image', resolvedImg)
+}
+
 let fetchPromise: Promise<any> | null = null
 
 async function fetchWeddingData(targetSlug?: string) {
-  const slug = targetSlug || resolveSlug()
+  const primarySlug = targetSlug || resolveSlug()
   guestCode.value = getGuestCode()
 
-  fetchPromise = getHome(slug, guestCode.value)
-    .then((data) => {
-      state.value.data = data
-      state.value.loading = false
-      return data
-    })
-    .catch((err) => {
+  fetchPromise = (async () => {
+    try {
+      const data = await getHome(primarySlug, guestCode.value)
+      if (data && data.wedding) {
+        state.value.data = data
+        state.value.loading = false
+        syncHeadMeta(data.wedding, data.guest)
+        return data
+      }
+      throw new Error('No wedding data')
+    } catch (err: any) {
+      // Fallback between 'tema-psrt' and 'zahron-asri' if primary fails
+      const alternateSlug = primarySlug === 'tema-psrt' ? 'zahron-asri' : 'tema-psrt'
+      try {
+        const altData = await getHome(alternateSlug, guestCode.value)
+        if (altData && altData.wedding) {
+          state.value.data = altData
+          state.value.loading = false
+          syncHeadMeta(altData.wedding, altData.guest)
+          return altData
+        }
+      } catch {
+        // Fall through
+      }
       console.warn('[useWedding] Backend request failed, using fallback data:', err)
       state.value.error = err.message
       state.value.loading = false
       return null
-    })
+    }
+  })()
 
   return fetchPromise
 }
@@ -79,6 +172,10 @@ if (typeof window !== 'undefined') {
           ...(state.value.data || {}),
           theme: previewTheme,
         }
+      }
+
+      if (state.value.data?.wedding) {
+        syncHeadMeta(state.value.data.wedding, state.value.data.guest)
       }
 
       if (refetch) {
@@ -229,15 +326,11 @@ export function useWedding() {
     }
 
     const rawParam = (guestCode.value || '').trim()
-    let fallbackName = 'Tamu Undangan'
-
-    if (rawParam && !isSystemGuestCode(rawParam)) {
-      fallbackName = formatDirectName(rawParam) || 'Tamu Undangan'
-    }
+    const fallbackName = rawParam ? formatDirectName(rawParam) : 'Tamu Undangan'
 
     return {
       namaTamu: fallbackName,
-      guestCode: isSystemGuestCode(rawParam) ? rawParam : '',
+      guestCode: rawParam,
       pax: 1,
     }
   })
