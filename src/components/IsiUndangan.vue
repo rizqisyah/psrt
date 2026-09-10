@@ -454,7 +454,7 @@ const showRsvpPopup = ref(false)
 watch(
   () => tamu.value?.namaTamu,
   (name) => {
-    if (name && !rsvpName.value) {
+    if (name && (name !== 'Tamu Undangan' || !rsvpName.value)) {
       rsvpName.value = name
     }
   },
@@ -497,7 +497,7 @@ const showWishPopup = ref(false)
 watch(
   () => tamu.value?.namaTamu,
   (name) => {
-    if (name && !wishName.value) {
+    if (name && (name !== 'Tamu Undangan' || !wishName.value)) {
       wishName.value = name
     }
   },

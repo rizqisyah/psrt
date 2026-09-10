@@ -1,5 +1,13 @@
 import { ref, computed, onMounted } from 'vue'
-import { resolveSlug, getHome, submitRsvp as apiSubmitRsvp, submitUcapan as apiSubmitUcapan } from '../lib/api'
+import {
+  resolveSlug,
+  getGuestCode,
+  isSystemGuestCode,
+  formatDirectName,
+  getHome,
+  submitRsvp as apiSubmitRsvp,
+  submitUcapan as apiSubmitUcapan,
+} from '../lib/api'
 
 interface WeddingState {
   loading: boolean
@@ -13,22 +21,14 @@ const state = ref<WeddingState>({
   data: null,
 })
 
+const guestCode = ref(getGuestCode())
 let fetchPromise: Promise<any> | null = null
 
 async function fetchWeddingData(targetSlug?: string) {
   const slug = targetSlug || resolveSlug()
-  let to = ''
-  if (typeof window !== 'undefined') {
-    const searchParams = new URLSearchParams(window.location.search)
-    to =
-      searchParams.get('to') ||
-      searchParams.get('u') ||
-      searchParams.get('guest') ||
-      searchParams.get('nama') ||
-      ''
-  }
+  guestCode.value = getGuestCode()
 
-  fetchPromise = getHome(slug, to)
+  fetchPromise = getHome(slug, guestCode.value)
     .then((data) => {
       state.value.data = data
       state.value.loading = false
@@ -42,6 +42,11 @@ async function fetchWeddingData(targetSlug?: string) {
     })
 
   return fetchPromise
+}
+
+// Immediately trigger data fetch on module load if in browser
+if (typeof window !== 'undefined') {
+  fetchWeddingData()
 }
 
 // Listen for live preview messages from admin-dashboard
@@ -215,16 +220,25 @@ export function useWedding() {
 
   const tamu = computed(() => {
     const g = state.value.data?.guest
-    let fallbackTo = ''
-    if (typeof window !== 'undefined') {
-      const sp = new URLSearchParams(window.location.search)
-      fallbackTo = sp.get('to') || sp.get('u') || sp.get('guest') || sp.get('nama') || ''
-      fallbackTo = fallbackTo.replace(/\+/g, ' ')
+    if (g?.guest_name || g?.name) {
+      return {
+        namaTamu: g.guest_name || g.name,
+        guestCode: g.guest_code || guestCode.value || '',
+        pax: g.pax || 1,
+      }
     }
+
+    const rawParam = (guestCode.value || '').trim()
+    let fallbackName = 'Tamu Undangan'
+
+    if (rawParam && !isSystemGuestCode(rawParam)) {
+      fallbackName = formatDirectName(rawParam) || 'Tamu Undangan'
+    }
+
     return {
-      namaTamu: g?.guest_name || g?.name || fallbackTo || 'Tamu Undangan',
-      guestCode: g?.guest_code || '',
-      pax: g?.pax || 1,
+      namaTamu: fallbackName,
+      guestCode: isSystemGuestCode(rawParam) ? rawParam : '',
+      pax: 1,
     }
   })
 
@@ -318,6 +332,7 @@ export function useWedding() {
     acaraList,
     countdownDate,
     tamu,
+    guestCode,
     rekeningList,
     ucapanList,
     submitGuestRsvp,

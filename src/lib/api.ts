@@ -4,6 +4,45 @@ const DEFAULT_SLUG = import.meta.env.VITE_DEFAULT_SLUG || 'tema-psrt'
 export const DESIGN_MODE =
   import.meta.env.VITE_DESIGN_MODE === '1' || import.meta.env.VITE_DESIGN_MODE === 'true'
 
+export function isSystemGuestCode(val: string): boolean {
+  if (!val) return false
+  return /^[A-Za-z]{1,4}\d{2,6}$/i.test(val.trim())
+}
+
+export function formatDirectName(val: string): string {
+  try {
+    return decodeURIComponent(val.replace(/\+/g, ' ')).trim()
+  } catch {
+    return val.replace(/\+/g, ' ').trim()
+  }
+}
+
+export function getGuestCode(): string {
+  if (typeof window === 'undefined') return ''
+  const searchParams = new URLSearchParams(window.location.search)
+  const fromQuery =
+    searchParams.get('to') ||
+    searchParams.get('kode') ||
+    searchParams.get('code') ||
+    searchParams.get('guest') ||
+    searchParams.get('c') ||
+    searchParams.get('k') ||
+    searchParams.get('tamu') ||
+    searchParams.get('u') ||
+    searchParams.get('nama') ||
+    ''
+  if (fromQuery) return fromQuery.trim()
+
+  const segments = window.location.pathname.split('/').filter(Boolean)
+  if (segments.length > 0) {
+    const last = segments[segments.length - 1]
+    if (isSystemGuestCode(last)) {
+      return last.trim()
+    }
+  }
+  return ''
+}
+
 export function resolveSlug(): string {
   if (typeof window === 'undefined') return DEFAULT_SLUG
 
@@ -14,10 +53,22 @@ export function resolveSlug(): string {
   const segments = window.location.pathname.split('/').filter(Boolean)
   if (segments.length === 0) return DEFAULT_SLUG
 
-  const last = segments[segments.length - 1]
-  if (last.toLowerCase() === 'psrt' || last.toLowerCase() === 'undangan-psrt') {
+  // Filter out theme identifier prefixes
+  const nonThemeSegments = segments.filter(
+    (s) => !['psrt', 'undangan-psrt', 'temapsrt'].includes(s.toLowerCase())
+  )
+
+  if (nonThemeSegments.length === 0) return DEFAULT_SLUG
+
+  // If last segment is a guest code (e.g. /TemaPsrt/tema-psrt/TE001 or /TemaPsrt/TE001)
+  const last = nonThemeSegments[nonThemeSegments.length - 1]
+  if (isSystemGuestCode(last)) {
+    if (nonThemeSegments.length > 1) {
+      return nonThemeSegments[nonThemeSegments.length - 2]
+    }
     return DEFAULT_SLUG
   }
+
   return last
 }
 

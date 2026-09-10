@@ -97,7 +97,7 @@ function handleOpenInvitation() {
     <FloatingMusic
       ref="musicRef"
       v-if="!isLoading"
-      :src="wedding?.music || '/music.mp3'"
+      :src="wedding?.music || undefined"
     />
 
 

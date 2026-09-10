@@ -5,7 +5,7 @@ import vinylImg from '../assets/vinyl.png'
 const props = defineProps({
   src: {
     type: String,
-    default: '/music.mp3',
+    default: `${import.meta.env.BASE_URL}music.mp3`,
   },
 })
 
