@@ -995,14 +995,14 @@ function showMoreWishes() {
           <img alt="" style="display: block; max-width: none; width: 100%; height: 100%" :src="imgLine8" />
         </div>
       </div>
-      <div style="position: absolute; display: contents; left: 151px; top: 1560px; cursor: pointer" data-node-id="58:112" @click="openDetailKonstruksi" role="button" tabindex="0" title="Lihat Detail Konstruksi & Denah Lokasi">
+      <div style="position: absolute; display: contents; left: 151px; top: 1560px; cursor: pointer" data-node-id="58:112" @click="openDetailKonstruksi" role="button" tabindex="0" title="SITE PLAN & ACCESS ROUTE">
         <div style="position: absolute; background-color: #585951; height: 52px; left: 151px; border-radius: 5px; top: 1560px; width: 294px" data-node-id="58:113" />
         <div style="position: absolute; border-width: 2px; border-color: #efe1cf; border-style: solid; height: 44px; left: 156px; border-radius: 5px; top: 1564px; width: 286px" data-node-id="58:114" />
         <p style="word-break: break-word; position: absolute; font-family: 'Monomakh', serif, sans-serif; font-weight: 400; height: 44px; line-height: 45px; left: 295px; font-style: normal; color: #efe1cf; font-size: 17px; text-align: center; top: 1564px; width: 278px; transform: translateX(-50%)" data-node-id="58:115">
-          LIHAT DETAIL KONSTRUKSI
+          SITE PLAN & ACCESS ROUTE
         </p>
         <p style="word-break: break-word; position: absolute; font-family: 'Monomakh', serif, sans-serif; font-weight: 400; height: 44px; line-height: 45px; left: 295px; font-style: normal; color: #efe1cf; font-size: 17px; text-align: center; top: 1564px; width: 278px; transform: translateX(-50%)" data-node-id="58:116">
-          LIHAT DETAIL KONSTRUKSI
+          SITE PLAN & ACCESS ROUTE
         </p>
       </div>
       <div style="position: absolute; display: contents; left: 151px; top: 1350px; cursor: pointer" data-node-id="58:117" @click="openMaps" role="button" tabindex="0" title="Buka Google Maps">

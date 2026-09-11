@@ -89,7 +89,7 @@ function openMaps() {
       </div>
     </div>
     <p class="abs detail-label" :style="{ top: off(1146) + 'px', left: '191px' }" data-node-id="188:138">WAKTU</p>
-    <p class="abs detail-value" :style="{ top: off(1168) + 'px', left: '191px' }" data-node-id="188:140">09.00 s.d 10.00 WIB</p>
+    <p class="abs detail-value" :style="{ top: off(1168) + 'px', left: '191px' }" data-node-id="188:140">08.30 s.d 10.00 WIB</p>
 
     <!-- Divider 2 (Line 10, design y: 1219) -->
     <div class="abs detail-line" :style="{ top: off(1219) + 'px' }" data-node-id="188:136">
@@ -113,7 +113,7 @@ function openMaps() {
       Masjid Agung Gresik, Lantai 2 (Sisi Barat)
     </p>
     <p class="abs detail-sub" :style="{ top: off(1281) + 'px' }" data-node-id="188:135">
-      Jalan Dr. Wahidin S.H. (Simpang Tiga Sumber), Kembangan, Kecamatan Kebomas, Kabupaten Gresik, Jawa Timur
+      Jalan Mayjend Sungkono, Desa Kembangan, Kecamatan Kebomas, Kabupaten Gresik, Jawa Timur
     </p>
 
     <!-- BUTTON: PROJECT SITE (Group 50, design y: 1350) -->
@@ -164,7 +164,7 @@ function openMaps() {
       @click="openMaps"
       data-node-id="188:123"
     >
-      <span class="btn-detail-inner">LIHAT DETAIL KONSTRUKSI</span>
+      <span class="btn-detail-inner">SITE PLAN & ACCESS ROUTE</span>
     </button>
 
     <!-- FOOTER LEGAL & MONOGRAM (design y: 1763 - 1845) -->
